@@ -1,0 +1,180 @@
+C51 COMPILER V9.59.0.0   SONG                                                              06/15/2018 15:00:36 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE SONG
+OBJECT MODULE PLACED IN song.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE song.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include "configuration.h"
+   2          /************ %BEEPER% EDIT  BELOW ***************/
+   3          
+   4          static unsigned char count=0,key=0;//定义计数变量及开关常量
+   5          unsigned char code SONG_TONE[]={212,212,190,212,159,169,212,212,190,212,142,159,
+   6          212,212,106,126,159,169,190,119,119,126,159,142,159,0};//乐谱音调
+   7          unsigned char code SONG_LONG[]={90,30,120,120,120,240,90,30,120,120,120,240,
+   8          90,30,120,120,120,120,240,90,30,120,120,120,240,0};//乐谱节奏
+   9          unsigned char code CharCode[]=
+  10            {
+  11             0xc0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,
+  12             0x80,0x90,0x88,0x83,0xC6,0xA1,0x86,0x8E
+  13            };//数码管断码
+  14          
+  15          
+  16          /*!-------------------------------------------------------------------------------------------------------
+             ----------------
+  17          @fn void playsong()
+  18          
+  19          @brief Play HappyBirthday.  
+  20          
+  21          This function automatically takes care of the beeper and play the HappyBirthday 
+  22          
+  23          Currently it only play once at a time.
+  24          
+  25          Example:
+  26          
+  27          playsong();
+  28          
+  29          
+  30          Requires:
+  31          - Definitions in SONG_TUNE & SONG_LONG are correct
+  32          
+  33          Promises:
+  34          - beeper will play a song
+  35          
+  36          */
+  37          void playsong()
+  38          {
+  39   1        unsigned int i=0,j,k;
+  40   1            while(SONG_LONG[i]!=0||SONG_TONE[i]!=0)
+  41   1            { 
+  42   2                for(j=0;j<SONG_LONG[i]*20;j++)
+  43   2              {
+  44   3                    AL=~AL;
+  45   3                for(k=0;k<SONG_TONE[i]/3;k++);
+  46   3              }
+  47   2                LCMDelay(10);
+  48   2                i++;
+  49   2            }
+  50   1      }
+  51          
+  52          /*!-------------------------------------------------------------------------------------------------------
+             ----------------
+  53          @fn void Alarm()
+C51 COMPILER V9.59.0.0   SONG                                                              06/15/2018 15:00:36 PAGE 2   
+
+  54          
+  55          @brief set alarm.  
+  56          
+  57          This function automatically set a Draw Marquee-LED Banner and give a beeper alarm in low frequency
+  58          
+  59          
+  60          Example:
+  61          
+  62          Alarm();
+  63          
+  64          
+  65          Requires:
+  66          - Definitions of P0 are correct
+  67          
+  68          Promises:
+  69          -  a Draw Marquee-LED Banner and give a beeper alarm will be given
+  70          
+  71          */
+  72          void Alarm()
+  73          {
+  74   1                AL=0; //蜂鸣器响 
+  75   1            P0=0xFF;         
+  76   1              P0=0xFE;
+  77   1              LCMDelay (50);  
+  78   1            P0=0xFD;//第一个灯亮11111110
+  79   1            LCMDelay (50); 
+  80   1            P0=0xFB;//第二个灯亮11111101 
+  81   1            LCMDelay (50);  
+  82   1            P0=0xF7; //第三个灯亮11111011 
+  83   1            LCMDelay (50);   
+  84   1            P0=0xEF;//第四个灯亮11110111 
+  85   1            LCMDelay (50);  
+  86   1            P0=0xDF; //第五个灯亮11101111 
+  87   1            LCMDelay (50);   
+  88   1            P0=0xBF;//第六个灯亮11011111
+  89   1            LCMDelay (50);    
+  90   1            P0=0x7F; //第七个灯亮10111111 
+  91   1            LCMDelay (50);  
+  92   1            P0=0xFF;//第八个灯亮01111111
+  93   1            if(key==0)//判断开关状态
+  94   1            {
+  95   2             count++;//计数+1
+  96   2             P1=CharCode[count];//数码管显示技数次数
+  97   2             key=1;//重置开关状态，停止计数
+  98   2             if(count>9)
+  99   2             {
+ 100   3             count=0;//9次后清零
+ 101   3             }
+ 102   2            }
+ 103   1            LCMDisplayString(1,0,"!!!!Warning !!!!"); 
+ 104   1      }
+ 105          
+ 106          /*!-------------------------------------------------------------------------------------------------------
+             ----------------
+ 107          @fn void Alarm0()
+ 108          
+ 109          @brief set alarm.  
+ 110          
+ 111          This function automatically set a Draw Marquee-LED Banner and give a beeper alarm in high frequency
+ 112          
+ 113          
+ 114          Example:
+C51 COMPILER V9.59.0.0   SONG                                                              06/15/2018 15:00:36 PAGE 3   
+
+ 115          
+ 116          Alarm();
+ 117          
+ 118          
+ 119          Requires:
+ 120          - Definitions of P0 are correct
+ 121          
+ 122          Promises:
+ 123          -  a Draw Marquee-LED Banner and give a beeper alarm will be given
+ 124          
+ 125          */
+ 126          void Alarm0()
+ 127          {
+ 128   1             AL=0;    
+ 129   1            P0=0xFF; 
+ 130   1            LCMDelay (1000);   
+ 131   1            AL=1;        
+ 132   1            P0=0xFE;
+ 133   1            LCMDelay (100);  
+ 134   1            P0=0xFD;//第一个灯亮11111110
+ 135   1            LCMDelay (100); 
+ 136   1            P0=0xFB;//第二个灯亮11111101 
+ 137   1            LCMDelay (100);  
+ 138   1            P0=0xF7; //第三个灯亮11111011 
+ 139   1            LCMDelay (100);   
+ 140   1            P0=0xEF;//第四个灯亮11110111 
+ 141   1            LCMDelay (100);  
+ 142   1            P0=0xDF;  //第五个灯亮11101111 
+ 143   1            LCMDelay (100);   
+ 144   1            P0=0xBF;//第六个灯亮11011111
+ 145   1            LCMDelay (100);    
+ 146   1            P0=0x7F; //第七个灯亮10111111 
+ 147   1            LCMDelay (100);  
+ 148   1            P0=0xFF;//第八个灯亮01111111
+ 149   1            key=0;//将开关状态置零，便于下次计数判断 
+ 150   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    364    ----
+   CONSTANT SIZE    =     85    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

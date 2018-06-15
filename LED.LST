@@ -1,0 +1,29 @@
+C51 COMPILER V9.02   LED                                                                   06/15/2018 14:10:51 PAGE 1   
+
+
+C51 COMPILER V9.02, COMPILATION OF MODULE LED
+OBJECT MODULE PLACED IN LED.OBJ
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE LED.C BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          /************ %BEEPER% EDIT TONE AND RYTHM BELOW ***************/
+   2          static unsigned char count=0,key=0;//定义计数变量及开关常量
+   3          unsigned char code SONG_TONE[]={212,212,190,212,159,169,212,212,190,212,142,159,
+   4          212,212,106,126,159,169,190,119,119,126,159,142,159,0};//乐谱音调
+   5          unsigned char code SONG_LONG[]={90,30,120,120,120,240,90,30,120,120,120,240,
+   6          90,30,120,120,120,120,240,90,30,120,120,120,240,0};//乐谱节奏
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =     52    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

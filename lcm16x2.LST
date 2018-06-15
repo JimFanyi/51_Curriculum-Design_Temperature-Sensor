@@ -1,0 +1,193 @@
+C51 COMPILER V9.59.0.0   LCM16X2                                                           06/15/2018 15:00:35 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE LCM16X2
+OBJECT MODULE PLACED IN lcm16x2.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE lcm16x2.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include "configuration.h"
+   2          unsigned int data DelayConst = 140;//延迟参数，根据处理器工作频率来设置
+   3          /*LCMDelay
+   4          功能：通过循环的方式延时
+   5          参数：int，表示要延时的毫秒数
+   6          返回：
+   7          */ 
+   8          void LCMDelay(int ms) 
+   9          {
+  10   1        unsigned int i,cnt;
+  11   1        cnt = DelayConst *ms;   
+  12   1        for(i=0;i<cnt;i++);  
+  13   1      }
+  14          /*LCMReadState
+  15          功能：查询LCM的忙标志/当前AC地址
+  16          参数：
+  17          返回：BYTE,最高bit为1表示忙，为0表示闲
+  18          */ 
+  19          unsigned char LCMReadState(void)
+  20          {
+  21   1        unsigned char state;
+  22   1        LCM_E=0; //E无效    
+  23   1        LCM_RS=0; //指定寄存器   
+  24   1        LCM_RW=1; //读 
+  25   1        LCM_E=1; 
+  26   1        _nop_();//等待一个机器周期    
+  27   1        _nop_();//等待一个机器周期     
+  28   1        state = LCM_DB;//输出   
+  29   1        LCM_E = 0;
+  30   1        return state;
+  31   1      }
+  32          /*LCMClear
+  33          功能：清屏
+  34          参数：
+  35          返回：
+  36          */
+  37          void LCMClear(void)
+  38          {
+  39   1        LCMDelay(12);   
+  40   1        LCM_E=0;
+  41   1        LCM_RS=0; //选择指令寄存器   
+  42   1        LCM_RW=0;//写    
+  43   1        LCM_DB=0x01;
+  44   1        LCM_E=1;
+  45   1        _nop_();
+  46   1        _nop_();
+  47   1        LCM_E = 0;
+  48   1        LCMDelay(12);  
+  49   1      }
+  50          /*LCMWriteCmd
+  51          功能：向LCM写入控制字
+  52          参数：BYTE，命令字节。写入前不判断忙表示（因为初始化过程中不能判断）
+  53          返回：
+  54          */
+  55          void LCMWriteCmd(unsigned char cmd)
+C51 COMPILER V9.59.0.0   LCM16X2                                                           06/15/2018 15:00:35 PAGE 2   
+
+  56          {
+  57   1        LCMDelay(12);
+  58   1        LCM_E=0;
+  59   1        LCM_RS=0;
+  60   1        LCM_RW=0;
+  61   1        LCM_DB=cmd;//向cmd控制字      
+  62   1        LCM_E=1;
+  63   1        _nop_();
+  64   1        _nop_();
+  65   1        LCM_E = 0;
+  66   1      }
+  67          /*LCMWriteData
+  68          功能：向LCM写入数据
+  69          参数：BYTE，将要写入的数据
+  70          返回：
+  71          */
+  72          void LCMWriteData(unsigned char dc)
+  73          {
+  74   1        while(LCMReadState()&BUSYFLAG);    
+  75   1        LCM_RS=1;//数字寄存器
+  76   1        LCM_RW=0;//写  
+  77   1        LCM_DB=dc;//写入dc  
+  78   1        LCM_E=1;
+  79   1        _nop_();
+  80   1        _nop_();
+  81   1        LCM_E = 0;
+  82   1      }
+  83          /*LCMInit
+  84          功能：初始化LCM
+  85          参数：DWORD，晶振频率（Hz），供计算延时常数
+  86          返回：
+  87          */
+  88          void LCMInit(void)
+  89          {
+  90   1        LCMDelay(60);//延时60ms，等待LCM复位  
+  91   1        LCMWriteCmd(0x38);//功能设置：8位接口，2行，5x7字符点阵
+  92   1        LCMDelay(5);//延时   
+  93   1        LCMWriteCmd(0x38);//第二次  
+  94   1        LCMDelay(1);//延时  
+  95   1        LCMWriteCmd(0x38);//此后可以通过检测忙标志判断指令执行情况  
+  96   1        while(LCMReadState()&BUSYFLAG);
+  97   1        LCMWriteCmd(0x08);//关闭显示  
+  98   1        while(LCMReadState()&BUSYFLAG);
+  99   1        LCMWriteCmd(0x01);//清屏 
+ 100   1        while(LCMReadState()&BUSYFLAG);
+ 101   1        LCMWriteCmd(0x06);//显示地址自动增量，整体不移位  
+ 102   1        while(LCMReadState()&BUSYFLAG);
+ 103   1        LCMWriteCmd(0x0e);//开显示，开光标，不闪烁    
+ 104   1        while(LCMReadState()&BUSYFLAG);
+ 105   1      }
+ 106          /*LCMGotoXY
+ 107          功能：移动光标到X行Y列
+ 108          参数：BYTE，x表示行（0,1），y表示列（横向，取值0~0x0f）
+ 109          返回：
+ 110          */
+ 111          void LCMGotoXY(unsigned char x,unsigned char y) 
+ 112          {
+ 113   1        unsigned char cmd;
+ 114   1        if(x==0)
+ 115   1        {
+ 116   2          cmd=0x80|y;
+ 117   2        }
+C51 COMPILER V9.59.0.0   LCM16X2                                                           06/15/2018 15:00:35 PAGE 3   
+
+ 118   1        else
+ 119   1        {
+ 120   2          cmd=0x80|0x40|y;
+ 121   2        }
+ 122   1        LCMWriteCmd(cmd); 
+ 123   1        while(LCMReadState()&BUSYFLAG);
+ 124   1      }
+ 125          /*LCMDisplayChar
+ 126          功能：在指定位置显示一个字符
+ 127          参数：x表示行（0,1），y表示列（横向取值0~0x0f），ch表示将要显示的字符（ASCII码）
+ 128          返回：
+ 129          */
+ 130          void LCMDisplayChar(unsigned char x, unsigned char y,unsigned char ch)
+ 131          {
+ 132   1        LCMGotoXY(x,y);//移动光标到x行y列   
+ 133   1        LCMWriteData(ch);//写入ch  
+ 134   1      }
+ 135          /*LCMDisplayString
+ 136          功能：从指定的位置开始显示字符串
+ 137          参数：x表示行（0,1），y表示列（横向取值0~0x0f），*str为指向将要显示的字符串的指针
+ 138          返回：
+ 139          */
+ 140          void LCMDisplayString(unsigned char x,unsigned char y,unsigned char *str)
+ 141          {
+ 142   1        unsigned char ptr;
+ 143   1        ptr=0;
+ 144   1        while(*(str+ptr)!=0)
+ 145   1        {
+ 146   2          LCMDisplayChar(x,(y+ptr),*(str+ptr));
+ 147   2          ptr++;
+ 148   2        }
+ 149   1      }
+ 150          /*LCMBlink
+ 151          功能：将指定位置显示的字符闪烁（同时关闭光标）
+ 152          参数：x表示行（0,1），y表示列（横向取值0~0x0f），cmd=BLINK：闪烁，NOBLINK：不闪烁
+ 153          返回：
+ 154          */
+ 155          void LCMBlink(unsigned char x,unsigned char y,unsigned char cmd) 
+ 156          {
+ 157   1        LCMGotoXY(x,y);
+ 158   1        if(cmd==BLINK)
+ 159   1        {
+ 160   2          LCMWriteCmd(0x0d);
+ 161   2        }
+ 162   1        else
+ 163   1        {
+ 164   2          LCMWriteCmd(0x0c);
+ 165   2        }
+ 166   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    295    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2       6
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

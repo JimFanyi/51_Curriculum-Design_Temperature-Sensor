@@ -1,0 +1,144 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              06/15/2018 15:00:35 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include "configuration.h"
+   2          
+   3          
+   4          
+   5          /*********************************************************************************************************
+             -**************
+   6          Global variable definitions with scope across entire project.
+   7          **********************************************************************************************************
+             -*************/
+   8          /*--------------------------------------------------------------------------------------------------------
+             -------------*/
+   9          /* New variables (all shall start */
+  10          unsigned char ucTH,ucTL,Ticks;
+  11          
+  12          /*--------------------------------------------------------------------------------------------------------
+             -------------*/
+  13          /* External global variables defined in other files (must indicate which file they are defined in) */     
+             -           /*!< @brief From main.c */
+  14          
+  15          
+  16            
+  17          
+  18          
+  19          
+  20          
+  21          void configuration()
+  22          {
+  23   1        TMOD = 0x21;//选择方式2 作为波特率发生器  
+  24   1        SCON = 0x50;//串口方式1， REN=1  
+  25   1          PCON |=0x80;//SMOD=1 
+  26   1        TL1 = 256-(OSC/12/16/BAUDRATE);//设置定时器初值 
+  27   1        TH1 = 256-(OSC/12/16/BAUDRATE);
+  28   1        TR1 = 1;//启动定时器
+  29   1        TI = 1;//TI有效
+  30   1        //检测DS18B20温度传感器是否存在并复位传感器  
+  31   1        if(Reset18B20())
+  32   1          printf("\r\n18B20 Reset OK!");
+  33   1        else 
+  34   1          printf("\r\n18B20 Not present!");
+  35   1        LCM_BLC=!LCM_BLC;
+  36   1      }
+  37          
+  38          
+  39          main()
+  40          {
+  41   1        unsigned char str[15];    
+  42   1        unsigned int i;
+  43   1        unsigned char tmph,tmp1;
+  44   1        Temperature t;
+  45   1        configuration();
+  46   1        
+  47   1        while(1)//主循环  
+  48   1        {
+  49   2          Reset18B20();//复位传感器  
+  50   2          Delay(144); 
+C51 COMPILER V9.59.0.0   MAIN                                                              06/15/2018 15:00:35 PAGE 2   
+
+  51   2          DS18B20WriteByte(SkipROM);//跳读，单总线，省时 
+  52   2          DS18B20WriteByte(StartConvert); //温度转换 
+  53   2          for(i=0;i<40000;i++);//等待   
+  54   2          Reset18B20();//复位  
+  55   2          Delay(144);   
+  56   2          DS18B20WriteByte(SkipROM);//跳读，单总线，省时   
+  57   2          DS18B20WriteByte(ReadMemory);//读RAM数据  
+  58   2          tmp1=DS18B20ReadByte();
+  59   2          tmph=DS18B20ReadByte();
+  60   2          printf("\n\rTempersture code HI=%02bX,L0=%02bX",tmph,tmp1);
+  61   2          DS18B20ReadTemperature(&t);//读取温度  
+  62   2          printf("\nTemperature = %d.%04d",t.z,t.x); //显示当前温度 
+  63   2          str[0]='N';
+  64   2          str[1]='o';
+  65   2          str[2]='w';
+  66   2          str[3]=' ';
+  67   2          str[4]='t';
+  68   2          str[5]='e';
+  69   2          str[6]='m';
+  70   2          str[7]='p';
+  71   2          str[8]=':';
+  72   2          str[9]=t.z/10+'0';//十位  
+  73   2          str[10]=t.z%10+'0';//个位   
+  74   2          str[11]='.';
+  75   2          str[12]=t.x/1000+'0';//十分位 
+  76   2          str[13]=(t.x/100)%10+'0';//百分位    
+  77   2          str[14]=(t.x/10)%10+'0';//千分位
+  78   2          str[15]='C';         
+  79   2          EA=0;//  停止所有中断    
+  80   2          Ticks=0;
+  81   2          ucTH=(65536-OSC/12/20)/256;//  计算 50ms 定时的时间常数  
+  82   2          ucTL=(65536-OSC/12/20)%256;
+  83   2          TMOD=0x21;    
+  84   2          TH0=ucTH;
+  85   2          TL0=ucTL;
+  86   2          ET0=1;// T0 允许中断    
+  87   2          TR0=1;//  启动定时器    
+  88   2          EA=1;//  打开总中断允许    
+  89   2          LCMInit(); //初始化LCM显示器  
+  90   2          LCMClear();//清屏    
+  91   2          LCMDisplayString(1,0,"Alert temp:30.00");   
+  92   2          LCMDisplayString(0,0,str);//输出温度数据到显示屏  
+  93   2          LCMBlink(0,15,BLINK);
+  94   2          if(t.z>=30)//设置警戒线 
+  95   2          {                
+  96   3            Alarm();
+  97   3          }
+  98   2          if(t.z>=31)//温度超过31摄氏度时，蜂鸣器响起生日歌
+  99   2          {
+ 100   3              playsong();
+ 101   3          }
+ 102   2          if(28<=t.z&&t.z<30)  
+ 103   2          { 
+ 104   3            Alarm0();
+ 105   3          }
+ 106   2          else
+ 107   2          {
+ 108   3            AL=1;//低于警戒值，蜂鸣器停止  
+ 109   3            P0=0xff;//全不亮11111111
+ 110   3          } 
+ 111   2        }
+ 112   1      }
+C51 COMPILER V9.59.0.0   MAIN                                                              06/15/2018 15:00:35 PAGE 3   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    428    ----
+   CONSTANT SIZE    =    116    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3      20
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
